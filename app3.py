@@ -1,23 +1,23 @@
 import streamlit as st
-import ollama
+from groq import Groq
+
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 st.set_page_config(
-    page_title="Offline AI Chatbot",
+    page_title="AI Chatbot",
     page_icon="🤖",
     layout="wide"
 )
 
 # ---------------- Sidebar ----------------
 
-st.sidebar.title("Offline AI Chatbot")
+st.sidebar.title("AI Chatbot")
 
 model_name = st.sidebar.selectbox(
     "Select AI Model",
     [
-        "llama3.2",
-        "gemma3",
-        "mistral",
-        "qwen2.5"
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant"
     ]
 )
 
@@ -30,13 +30,12 @@ if st.sidebar.button("Clear Chat"):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-st.title("Offline AI Chatbot")
-st.caption("Powered by Ollama")
+st.title("🤖 AI Chatbot")
+st.caption("Powered by Groq")
 
 # ---------------- Chat History ----------------
 
 for message in st.session_state.messages:
-
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
@@ -59,7 +58,6 @@ if prompt:
     conversation = []
 
     for chat in st.session_state.messages:
-
         conversation.append(
             {
                 "role": chat["role"],
@@ -69,12 +67,14 @@ if prompt:
 
     with st.spinner("Generating response..."):
 
-        response = ollama.chat(
+        response = client.chat.completions.create(
             model=model_name,
-            messages=conversation
+            messages=conversation,
+            temperature=0.7,
+            max_tokens=1024
         )
 
-    answer = response["message"]["content"]
+        answer = response.choices[0].message.content
 
     with st.chat_message("assistant"):
         st.markdown(answer)
@@ -89,7 +89,6 @@ if prompt:
 # ---------------- Statistics ----------------
 
 st.sidebar.markdown("---")
-
 st.sidebar.subheader("Statistics")
 
 user_count = len(
@@ -108,7 +107,6 @@ st.sidebar.write(f"AI Responses : {ai_count}")
 chat_history = ""
 
 for message in st.session_state.messages:
-
     chat_history += (
         f"{message['role'].upper()}:\n"
         f"{message['content']}\n\n"
